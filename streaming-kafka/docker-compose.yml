@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: streaming_zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - streaming-network
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: streaming_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    networks:
+      - streaming-network
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: streaming_kafka_setup
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - streaming-network
+    command: >
+      bash -c "
+        echo 'Creating Kafka topics...'
+        kafka-topics --create --if-not-exists --topic order-events --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092
+        kafka-topics --create --if-not-exists --topic inventory-events --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092
+        echo 'Topics created successfully'
+        kafka-topics --list --bootstrap-server kafka:9092
+      "
+
+  producer_order:
+    build:
+      context: ..
+      dockerfile: streaming-kafka/producer_order/Dockerfile
+    container_name: streaming_producer_order
+    ports:
+      - "8201:8201"
+    environment:
+      - PORT=8201
+      - KAFKA_BROKER=kafka:9092
+    networks:
+      - streaming-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  inventory_consumer:
+    build:
+      context: ..
+      dockerfile: streaming-kafka/inventory_consumer/Dockerfile
+    container_name: streaming_inventory_consumer
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    networks:
+      - streaming-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  analytics_consumer:
+    build:
+      context: ..
+      dockerfile: streaming-kafka/analytics_consumer/Dockerfile
+    container_name: streaming_analytics_consumer
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    networks:
+      - streaming-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    volumes:
+      - ./analytics_output:/app
+
+networks:
+  streaming-network:
+    driver: bridge
+
+volumes:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:

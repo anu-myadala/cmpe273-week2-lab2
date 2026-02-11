@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  order_service:
+    build:
+      context: ..
+      dockerfile: sync-rest/order_service/Dockerfile
+    container_name: sync_order_service
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - INVENTORY_SERVICE_URL=http://inventory_service:8002
+      - NOTIFICATION_SERVICE_URL=http://notification_service:8003
+      - REQUEST_TIMEOUT=5
+    networks:
+      - sync-network
+    depends_on:
+      - inventory_service
+      - notification_service
+    restart: unless-stopped
+
+  inventory_service:
+    build:
+      context: ..
+      dockerfile: sync-rest/inventory_service/Dockerfile
+    container_name: sync_inventory_service
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+    networks:
+      - sync-network
+    restart: unless-stopped
+
+  notification_service:
+    build:
+      context: ..
+      dockerfile: sync-rest/notification_service/Dockerfile
+    container_name: sync_notification_service
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+    networks:
+      - sync-network
+    restart: unless-stopped
+
+networks:
+  sync-network:
+    driver: bridge
