@@ -115,16 +115,15 @@ python test_failure.py
 
 ```bash
 cd async-rabbitmq
-docker-compose up --build
+docker compose up -d --build
 
-# In another terminal
-cd tests
-python test_resilience.py
-python test_idempotency.py
-python test_dlq.py
+# In another terminal (from async-rabbitmq/ directory)
+bash tests/test_backlog_drain.sh
+bash tests/test_idempotency.sh
+bash tests/test_dlq.sh
 ```
 
-**Ports:** 8101 (Order), 5672 (RabbitMQ), 15672 (Management UI)
+**Ports:** 8001 (Order), 5672 (RabbitMQ), 15672 (Management UI)
 
 **RabbitMQ UI:** http://localhost:15672 (guest/guest)
 
@@ -177,29 +176,26 @@ cmpe273-comm-models-lab/
 │       └── test_failure.py              # Failure injection
 │
 ├── async-rabbitmq/                      # Part B: Async RabbitMQ
-│   ├── README.md                        # Setup & architecture
-│   ├── RESULTS.md                       # Test results & analysis
+│   ├── submission.md                    # Test results & analysis
 │   ├── docker-compose.yml
-│   ├── order_service/                   # Port 8101
+│   ├── broker/
+│   │   └── README.md                    # Exchange/queue topology docs
+│   ├── order_service/                   # Port 8001
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
-│   │   ├── app.py
-│   │   ├── publisher.py
-│   │   └── database.py
+│   │   └── app.py
 │   ├── inventory_service/
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
-│   │   ├── consumer.py
-│   │   └── idempotency.py
+│   │   └── app.py
 │   ├── notification_service/
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
-│   │   └── consumer.py
+│   │   └── app.py
 │   └── tests/
-│       ├── README.md
-│       ├── test_resilience.py           # Service outage handling
-│       ├── test_idempotency.py          # Duplicate detection
-│       └── test_dlq.py                  # Poison message handling
+│       ├── test_backlog_drain.sh        # Service outage & recovery
+│       ├── test_idempotency.sh          # Duplicate detection
+│       └── test_dlq.sh                  # Poison message handling
 │
 └── streaming-kafka/                     # Part C: Streaming Kafka
     ├── README.md                        # Setup & architecture
@@ -256,9 +252,8 @@ Each part has comprehensive documentation:
 - **[sync-rest/tests/README.md](sync-rest/tests/README.md)** - Test instructions
 
 ### Part B: Async RabbitMQ
-- **[async-rabbitmq/README.md](async-rabbitmq/README.md)** - Architecture, RabbitMQ topology, setup
-- **[async-rabbitmq/RESULTS.md](async-rabbitmq/RESULTS.md)** - Resilience, idempotency, DLQ analysis
-- **[async-rabbitmq/tests/README.md](async-rabbitmq/tests/README.md)** - Test instructions
+- **[async-rabbitmq/submission.md](async-rabbitmq/submission.md)** - Backlog recovery, idempotency, DLQ analysis
+- **[async-rabbitmq/broker/README.md](async-rabbitmq/broker/README.md)** - Exchange/queue topology docs
 
 ### Part C: Streaming Kafka
 - **[streaming-kafka/README.md](streaming-kafka/README.md)** - Architecture, Kafka config, setup
@@ -279,9 +274,9 @@ Each part has comprehensive documentation:
 
 | Test | What It Shows | Key Insight |
 |------|---------------|-------------|
-| Resilience | Messages queue during outages | No message loss, service independence |
-| Idempotency | Duplicate detection | Safe to retry, at-least-once delivery |
-| DLQ | Poison message isolation | Bad messages don't block queue |
+| Backlog Drain | Messages queue during outages, drain on restart | No message loss, durable queues preserve messages |
+| Idempotency | Duplicate detection via in-memory set | Safe to retry, at-least-once delivery |
+| DLQ | Malformed message routed to dead letter queue | Bad messages don't block queue, available for inspection |
 
 ### Streaming Kafka Tests
 

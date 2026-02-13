@@ -1,83 +1,40 @@
-version: '3.8'
-
 services:
   rabbitmq:
-    image: rabbitmq:3.12-management
-    container_name: async_rabbitmq
+    image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    networks:
-      - async-network
     healthcheck:
       test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 10s
       retries: 5
-      start_period: 30s
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
 
   order_service:
-    build:
-      context: ..
-      dockerfile: async-rabbitmq/order_service/Dockerfile
-    container_name: async_order_service
+    build: ./order_service
     ports:
-      - "8101:8101"
-    environment:
-      - PORT=8101
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-    networks:
-      - async-network
+      - "8001:8001"
     depends_on:
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      PYTHONUNBUFFERED: 1
 
   inventory_service:
-    build:
-      context: ..
-      dockerfile: async-rabbitmq/inventory_service/Dockerfile
-    container_name: async_inventory_service
-    environment:
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-    networks:
-      - async-network
+    build: ./inventory_service
     depends_on:
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      PYTHONUNBUFFERED: 1
 
   notification_service:
-    build:
-      context: ..
-      dockerfile: async-rabbitmq/notification_service/Dockerfile
-    container_name: async_notification_service
-    environment:
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-    networks:
-      - async-network
+    build: ./notification_service
     depends_on:
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
-
-networks:
-  async-network:
-    driver: bridge
-
-volumes:
-  rabbitmq_data:
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      PYTHONUNBUFFERED: 1
