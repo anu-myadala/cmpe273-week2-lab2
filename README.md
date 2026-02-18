@@ -28,11 +28,12 @@ Each implementation handles the same business logic (order → inventory → not
 ```
 Client → OrderService → InventoryService → NotificationService
          (waits)        (waits)           (returns)
-         
+
 Total Latency = Sum of all services
 ```
 
 **Characteristics:**
+
 - Simple request-response pattern
 - Immediate feedback
 - Tight coupling (cascading failures)
@@ -43,12 +44,13 @@ Total Latency = Sum of all services
 ```
 Client → OrderService → RabbitMQ → InventoryService → RabbitMQ → NotificationService
          (202)          (queue)     (consumer)         (queue)     (consumer)
-         
+
 Client Latency = Order service only (~15ms)
 Processing happens asynchronously
 ```
 
 **Characteristics:**
+
 - Loose coupling via message queues
 - Resilient (messages persist during outages)
 - Idempotency (duplicate detection)
@@ -59,12 +61,13 @@ Processing happens asynchronously
 ```
 Client → Producer → Kafka → [Inventory Consumer, Analytics Consumer, ...]
          (202)      (log)    (independent groups)
-         
+
 Multiple consumers process same events independently
 Full event replay capability
 ```
 
 **Characteristics:**
+
 - High throughput (1000+ events/second)
 - Event sourcing & replay
 - Multiple independent consumers
@@ -72,20 +75,20 @@ Full event replay capability
 
 ## 📊 Comparison Table
 
-| Aspect | Sync REST | Async (RabbitMQ) | Streaming (Kafka) |
-|--------|-----------|------------------|-------------------|
-| **Response Time** | Slow (sum of all) | Fast (202) | Fast (202) |
-| **Client Latency (P50)** | 2040ms | 15ms | 12ms |
-| **Throughput** | ~50/s | ~500-1000/s | ~1000-5000/s |
-| **Latency Impact** | Cascading | Isolated | Isolated |
-| **Failure Recovery** | Immediate fail | Retry + DLQ | Replay |
-| **Coupling** | Tight | Loose | Loose |
-| **Scalability** | Vertical | Horizontal | Massive Horizontal |
-| **Complexity** | Low | Medium | High |
-| **Data Replay** | No | Limited | Full |
-| **Memory Required** | 2GB | 4GB | 8GB+ |
-| **Infrastructure** | Docker | Docker + RabbitMQ | Docker + Kafka + Zookeeper |
-| **Best For** | Simple CRUD | Workflows | High-volume + Analytics |
+| Aspect                   | Sync REST         | Async (RabbitMQ)  | Streaming (Kafka)          |
+| ------------------------ | ----------------- | ----------------- | -------------------------- |
+| **Response Time**        | Slow (sum of all) | Fast (202)        | Fast (202)                 |
+| **Client Latency (P50)** | 2040ms            | 15ms              | 12ms                       |
+| **Throughput**           | ~50/s             | ~500-1000/s       | ~1000-5000/s               |
+| **Latency Impact**       | Cascading         | Isolated          | Isolated                   |
+| **Failure Recovery**     | Immediate fail    | Retry + DLQ       | Replay                     |
+| **Coupling**             | Tight             | Loose             | Loose                      |
+| **Scalability**          | Vertical          | Horizontal        | Massive Horizontal         |
+| **Complexity**           | Low               | Medium            | High                       |
+| **Data Replay**          | No                | Limited           | Full                       |
+| **Memory Required**      | 2GB               | 4GB               | 8GB+                       |
+| **Infrastructure**       | Docker            | Docker + RabbitMQ | Docker + Kafka + Zookeeper |
+| **Best For**             | Simple CRUD       | Workflows         | High-volume + Analytics    |
 
 ## 🚀 Quick Start
 
@@ -226,18 +229,21 @@ cmpe273-comm-models-lab/
 ## 🔧 Technology Stack
 
 **Languages & Frameworks:**
+
 - Python 3.11
 - Flask (REST APIs)
 - Pika (RabbitMQ client)
 - confluent-kafka-python (Kafka client)
 
 **Infrastructure:**
+
 - Docker & Docker Compose
 - RabbitMQ 3.12 with management plugin
 - Apache Kafka 3.6 (Confluent 7.5.0)
 - Zookeeper 3.8
 
 **Testing:**
+
 - Python requests library
 - Custom latency measurement
 - CSV/JSON export for results
@@ -247,65 +253,72 @@ cmpe273-comm-models-lab/
 Each part has comprehensive documentation:
 
 ### Part A: Synchronous REST
+
 - **[sync-rest/README.md](sync-rest/README.md)** - Architecture, setup, API specs
-- **[sync-rest/RESULTS.md](sync-rest/RESULTS.md)** - Test results, latency analysis, trade-offs
+- **[submissions/RESULTS.pdf](submissions/RESULTS.md)** - Test results, latency analysis, trade-offs
 - **[sync-rest/tests/README.md](sync-rest/tests/README.md)** - Test instructions
 
 ### Part B: Async RabbitMQ
-- **[async-rabbitmq/submission.md](async-rabbitmq/submission.md)** - Backlog recovery, idempotency, DLQ analysis
+
+- **[submissions/submission.md](submissions/submission.md)** - Backlog recovery, idempotency, DLQ analysis
 - **[async-rabbitmq/broker/README.md](async-rabbitmq/broker/README.md)** - Exchange/queue topology docs
 
 ### Part C: Streaming Kafka
+
 - **[streaming-kafka/README.md](streaming-kafka/README.md)** - Architecture, Kafka config, setup
-- **[streaming-kafka/RESULTS.md](streaming-kafka/RESULTS.md)** - Throughput, replay, scaling analysis
+- **[submissions/streaming_kafka](submissions/streaming_kafka)** - Throughput, replay, scaling analysis
 - **[streaming-kafka/tests/README.md](streaming-kafka/tests/README.md)** - Test instructions
 
 ## 🧪 Testing Summary
 
 ### Synchronous REST Tests
 
-| Test | What It Shows | Key Insight |
-|------|---------------|-------------|
-| Baseline | Normal latency (~30ms) | Fast when all services healthy |
-| Delay | Cascading delays (+2000ms) | Downstream delays affect all callers |
-| Failure | Immediate failures (100%) | One service down = entire flow fails |
+| Test     | What It Shows              | Key Insight                          |
+| -------- | -------------------------- | ------------------------------------ |
+| Baseline | Normal latency (~30ms)     | Fast when all services healthy       |
+| Delay    | Cascading delays (+2000ms) | Downstream delays affect all callers |
+| Failure  | Immediate failures (100%)  | One service down = entire flow fails |
 
 ### Async RabbitMQ Tests
 
-| Test | What It Shows | Key Insight |
-|------|---------------|-------------|
-| Backlog Drain | Messages queue during outages, drain on restart | No message loss, durable queues preserve messages |
-| Idempotency | Duplicate detection via in-memory set | Safe to retry, at-least-once delivery |
-| DLQ | Malformed message routed to dead letter queue | Bad messages don't block queue, available for inspection |
+| Test          | What It Shows                                   | Key Insight                                              |
+| ------------- | ----------------------------------------------- | -------------------------------------------------------- |
+| Backlog Drain | Messages queue during outages, drain on restart | No message loss, durable queues preserve messages        |
+| Idempotency   | Duplicate detection via in-memory set           | Safe to retry, at-least-once delivery                    |
+| DLQ           | Malformed message routed to dead letter queue   | Bad messages don't block queue, available for inspection |
 
 ### Streaming Kafka Tests
 
-| Test | What It Shows | Key Insight |
-|------|---------------|-------------|
+| Test       | What It Shows             | Key Insight                         |
+| ---------- | ------------------------- | ----------------------------------- |
 | 10K Volume | High throughput (~2000/s) | Batch API critical, scales linearly |
-| Lag | Backpressure handling | Lag builds then drains, no loss |
-| Replay | Event sourcing | Deterministic reprocessing |
+| Lag        | Backpressure handling     | Lag builds then drains, no loss     |
+| Replay     | Event sourcing            | Deterministic reprocessing          |
 
 ## 💡 Key Concepts
 
 ### Synchronous vs Asynchronous
 
 **Synchronous:**
+
 ```python
 result = call_service_1()  # Wait
 result = call_service_2()  # Wait
 return result              # Finally return
 ```
+
 - Client waits for entire chain
 - Latency = sum of all services
 - Simple but brittle
 
 **Asynchronous:**
+
 ```python
 publish_event()            # Don't wait
 return "202 Accepted"      # Return immediately
 # Processing happens in background
 ```
+
 - Client gets immediate response
 - Processing decoupled
 - Resilient but complex
@@ -313,11 +326,13 @@ return "202 Accepted"      # Return immediately
 ### Message Queues vs Event Streams
 
 **Message Queues (RabbitMQ):**
+
 - Messages consumed and removed
 - Work distribution (one consumer gets each message)
 - Good for workflows and task queues
 
 **Event Streams (Kafka):**
+
 - Events persist in log (retained)
 - Multiple consumers read same events
 - Good for analytics and event sourcing
@@ -351,6 +366,7 @@ kafka-consumer-groups --reset-offsets --to-earliest
 ## 🎓 When to Use Each Pattern
 
 ### Use Synchronous REST When:
+
 ✓ Simple CRUD operations
 ✓ Need immediate result
 ✓ 1-2 services in chain
@@ -358,6 +374,7 @@ kafka-consumer-groups --reset-offsets --to-earliest
 ✓ Internal APIs
 
 ### Use Async RabbitMQ When:
+
 ✓ Multi-step workflows
 ✓ Need resilience to outages
 ✓ Can tolerate eventual consistency
@@ -365,6 +382,7 @@ kafka-consumer-groups --reset-offsets --to-earliest
 ✓ Background jobs
 
 ### Use Streaming Kafka When:
+
 ✓ High volume (1000+ events/s)
 ✓ Need event replay
 ✓ Multiple consumers of same data
@@ -376,30 +394,31 @@ kafka-consumer-groups --reset-offsets --to-earliest
 ### Latency Comparison (Client Perspective)
 
 | Metric | Sync REST | Async RabbitMQ | Streaming Kafka |
-|--------|-----------|----------------|-----------------|
-| P50 | 2040ms | 15ms | 12ms |
-| P95 | 2080ms | 25ms | 20ms |
-| P99 | 2100ms | 35ms | 30ms |
+| ------ | --------- | -------------- | --------------- |
+| P50    | 2040ms    | 15ms           | 12ms            |
+| P95    | 2080ms    | 25ms           | 20ms            |
+| P99    | 2100ms    | 35ms           | 30ms            |
 
 ### Throughput Comparison
 
-| Pattern | Single Request | Batch | Notes |
-|---------|----------------|-------|-------|
-| Sync REST | ~50/s | N/A | Blocking |
-| Async RabbitMQ | ~500/s | ~1000/s | Message broker |
-| Streaming Kafka | ~100/s | ~2000-5000/s | Batch critical |
+| Pattern         | Single Request | Batch        | Notes          |
+| --------------- | -------------- | ------------ | -------------- |
+| Sync REST       | ~50/s          | N/A          | Blocking       |
+| Async RabbitMQ  | ~500/s         | ~1000/s      | Message broker |
+| Streaming Kafka | ~100/s         | ~2000-5000/s | Batch critical |
 
 ### Failure Behavior
 
-| Scenario | Sync | Async | Streaming |
-|----------|------|-------|-----------|
-| Service down | ✗ Entire flow fails | ✓ Messages queue | ✓ Messages queue |
-| Network blip | ✗ Request lost | ✓ Retry | ✓ Persist & retry |
-| High load | ✗ Timeout/fail | ✓ Backpressure | ✓ Lag & catch up |
+| Scenario     | Sync                | Async            | Streaming         |
+| ------------ | ------------------- | ---------------- | ----------------- |
+| Service down | ✗ Entire flow fails | ✓ Messages queue | ✓ Messages queue  |
+| Network blip | ✗ Request lost      | ✓ Retry          | ✓ Persist & retry |
+| High load    | ✗ Timeout/fail      | ✓ Backpressure   | ✓ Lag & catch up  |
 
 ## 🚨 Common Issues & Solutions
 
 ### Services won't start
+
 ```bash
 # Check Docker resources
 docker system df
@@ -410,6 +429,7 @@ lsof -i :8001  # Check if port in use
 ```
 
 ### RabbitMQ connection issues
+
 ```bash
 # Wait for RabbitMQ to be ready (30s)
 docker logs async_rabbitmq
@@ -419,6 +439,7 @@ open http://localhost:15672
 ```
 
 ### Kafka won't start
+
 ```bash
 # Kafka needs 8GB RAM
 # Check Docker memory settings
@@ -431,6 +452,7 @@ docker logs streaming_zookeeper
 ```
 
 ### Tests fail
+
 ```bash
 # Ensure services are running
 docker ps
@@ -447,21 +469,25 @@ docker-compose logs --tail=50
 ## 📚 Further Reading
 
 ### Synchronous REST
+
 - REST API Design Best Practices
 - Timeout strategies
 - Circuit breaker pattern
 
 ### Asynchronous Messaging
+
 - RabbitMQ documentation: https://www.rabbitmq.com/documentation.html
 - Message queue patterns
 - Eventual consistency
 
 ### Event Streaming
+
 - Kafka documentation: https://kafka.apache.org/documentation/
 - Event sourcing pattern
 - CQRS (Command Query Responsibility Segregation)
 
 ### General Microservices
+
 - Microservices Patterns (Chris Richardson)
 - Domain-Driven Design (Eric Evans)
 - Building Microservices (Sam Newman)
@@ -469,6 +495,7 @@ docker-compose logs --tail=50
 ## 🤝 Contributing
 
 This is a lab project. Feel free to:
+
 - Report issues
 - Suggest improvements
 - Add new test scenarios
