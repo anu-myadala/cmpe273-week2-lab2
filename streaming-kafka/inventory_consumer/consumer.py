@@ -9,6 +9,7 @@ import os
 import sys
 import signal
 import random
+import time
 
 sys.path.append('/app/common')
 from ids import generate_event_id, current_timestamp
@@ -28,6 +29,13 @@ class InventoryConsumer:
         self.output_topic = 'inventory-events'
         self.running = True
         self.inventory = {}  # In-memory inventory
+
+        # Optional throttling for lag demos
+        # Set PROCESSING_DELAY_MS to slow down per-message processing.
+        try:
+            self.processing_delay_ms = int(os.getenv('PROCESSING_DELAY_MS', '0'))
+        except ValueError:
+            self.processing_delay_ms = 0
         
         # Consumer configuration
         consumer_config = {
@@ -118,7 +126,11 @@ class InventoryConsumer:
                 value=json.dumps(response_event).encode('utf-8')
             )
             self.producer.poll(0)
-            
+
+            # Simulate slower consumer if requested
+            if self.processing_delay_ms > 0:
+                time.sleep(self.processing_delay_ms / 1000.0)
+
             return True
             
         except Exception as e:

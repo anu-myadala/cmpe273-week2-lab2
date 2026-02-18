@@ -1,0 +1,93 @@
+{
+  "test": "consumer_lag_throttling",
+  "throttle_delay_ms": 200,
+  "events_produced": 1000,
+  "production_time_seconds": 0.67,
+  "throughput_events_per_second": 1501.91,
+  "lag_measurements": [
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 0,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 5,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 10,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 15,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 20,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 25,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "throttled_200ms",
+      "elapsed_seconds": 30,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 0,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 10,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 20,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 30,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 40,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 50,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    },
+    {
+      "phase": "unthrottled_0ms",
+      "elapsed_seconds": 60,
+      "analytics_lag": 6000,
+      "inventory_lag": 0
+    }
+  ]
+}

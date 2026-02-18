@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-02-18T00:23:17.907575Z",
+  "window_end_timestamp": "2026-02-18T00:22:47.275261Z",
+  "orders_per_minute": 1000,
+  "failure_rate_percent": 9.44,
+  "success_rate_percent": 90.56,
+  "total_orders": 5000,
+  "failed_orders": 472,
+  "reserved_orders": 4528,
+  "throughput_events_per_second": 70.73,
+  "elapsed_seconds": 141.38
+}

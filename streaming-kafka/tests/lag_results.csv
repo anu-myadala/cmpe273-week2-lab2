@@ -1,0 +1,15 @@
+Phase,Elapsed(s),Analytics Lag,Inventory Lag
+throttled_200ms,0,6000,0
+throttled_200ms,5,6000,0
+throttled_200ms,10,6000,0
+throttled_200ms,15,6000,0
+throttled_200ms,20,6000,0
+throttled_200ms,25,6000,0
+throttled_200ms,30,6000,0
+unthrottled_0ms,0,6000,0
+unthrottled_0ms,10,6000,0
+unthrottled_0ms,20,6000,0
+unthrottled_0ms,30,6000,0
+unthrottled_0ms,40,6000,0
+unthrottled_0ms,50,6000,0
+unthrottled_0ms,60,6000,0

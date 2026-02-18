@@ -27,6 +27,13 @@ class AnalyticsConsumer:
         self.metrics = MetricsCalculator()
         self.metrics_interval = 10  # Log metrics every 10 seconds
         self.last_metrics_time = time.time()
+
+        # Optional throttling for lag demos
+        # Set PROCESSING_DELAY_MS to slow down per-message processing.
+        try:
+            self.processing_delay_ms = int(os.getenv('PROCESSING_DELAY_MS', '0'))
+        except ValueError:
+            self.processing_delay_ms = 0
         
         # Consumer configuration
         consumer_config = {
@@ -74,6 +81,10 @@ class AnalyticsConsumer:
                 
                 self.last_metrics_time = current_time
             
+            # Simulate slower consumer if requested
+            if self.processing_delay_ms > 0:
+                time.sleep(self.processing_delay_ms / 1000.0)
+
             return True
             
         except Exception as e:

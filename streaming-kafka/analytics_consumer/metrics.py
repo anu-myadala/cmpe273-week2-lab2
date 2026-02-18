@@ -6,6 +6,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 import json
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class MetricsCalculator:
         self.failed_orders = 0
         self.reserved_orders = 0
         self.start_time = datetime.now(timezone.utc)
+        self.max_event_time = None  # event-time window end
     
     def add_event(self, event_type, timestamp_str=None):
         """
@@ -43,10 +45,15 @@ class MetricsCalculator:
             elif event_type == 'InventoryReserved':
                 self.reserved_orders += 1
             
-            # Remove events older than 1 minute for sliding window
-            cutoff = datetime.now(timezone.utc) - timedelta(minutes=1)
-            while self.events and self.events[0][0] < cutoff:
-                self.events.popleft()
+            # Remove events older than 1 minute, based on event-time.
+            # This makes replay deterministic: the window is relative to the
+            # latest event timestamp seen, not wall-clock time.
+            if self.max_event_time is None or timestamp > self.max_event_time:
+                self.max_event_time = timestamp
+            cutoff = self.max_event_time - timedelta(minutes=1)
+
+            # Prune to the 1-minute event-time window
+            self.events = deque((ts, et) for ts, et in self.events if ts >= cutoff)
         
         except Exception as e:
             logger.error(f"Error adding event to metrics: {e}")
@@ -79,6 +86,7 @@ class MetricsCalculator:
         """Get all metrics as dictionary"""
         return {
             'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            'window_end_timestamp': (self.max_event_time or datetime.now(timezone.utc)).isoformat().replace('+00:00', 'Z'),
             'orders_per_minute': self.get_orders_per_minute(),
             'failure_rate_percent': round(self.get_failure_rate(), 2),
             'success_rate_percent': round(self.get_success_rate(), 2),
@@ -96,12 +104,16 @@ class MetricsCalculator:
         self.failed_orders = 0
         self.reserved_orders = 0
         self.start_time = datetime.now(timezone.utc)
+        self.max_event_time = None  # event-time window end
         logger.info("Metrics reset")
     
-    def save_to_file(self, filename='metrics_output.json'):
+    def save_to_file(self, filename='/app/output/metrics_output.json'):
         """Save metrics to JSON file"""
         try:
             metrics = self.get_metrics()
+            out_dir = os.path.dirname(filename)
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
             with open(filename, 'w') as f:
                 json.dump(metrics, f, indent=2)
             logger.info(f"Metrics saved to {filename}")

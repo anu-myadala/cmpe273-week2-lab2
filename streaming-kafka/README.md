@@ -58,6 +58,7 @@ Consumer Groups:
 9. Metrics exported to JSON file
 
 **Key Features:**
+
 - Multiple consumers process same events independently
 - Events persisted (7-day retention)
 - Replay capability via offset management
@@ -70,11 +71,13 @@ Consumer Groups:
 REST API that accepts orders and publishes to Kafka.
 
 **Endpoints:**
+
 - `GET /health` - Health check
 - `POST /order` - Single order
 - `POST /orders/batch` - Batch orders (up to 1000)
 
 **Single Order:**
+
 ```json
 {
   "user_id": "string",
@@ -84,16 +87,18 @@ REST API that accepts orders and publishes to Kafka.
 ```
 
 **Batch Orders:**
+
 ```json
 {
   "orders": [
-    {"user_id": "user1", "item": "Burger", "quantity": 1},
-    {"user_id": "user2", "item": "Pizza", "quantity": 2}
+    { "user_id": "user1", "item": "Burger", "quantity": 1 },
+    { "user_id": "user2", "item": "Pizza", "quantity": 2 }
   ]
 }
 ```
 
 **Response (202):**
+
 ```json
 {
   "order_id": "uuid",
@@ -104,6 +109,7 @@ REST API that accepts orders and publishes to Kafka.
 ```
 
 **Event Schema:**
+
 ```json
 {
   "event_id": "uuid",
@@ -123,6 +129,7 @@ REST API that accepts orders and publishes to Kafka.
 Background consumer that processes orders and updates inventory.
 
 **Functionality:**
+
 - Reads from: order-events topic
 - Consumer group: inventory-group
 - Processing: Reserve inventory (90% success)
@@ -130,6 +137,7 @@ Background consumer that processes orders and updates inventory.
 - Commit: Manual (after successful processing)
 
 **Inventory Event Schema:**
+
 ```json
 {
   "event_id": "uuid",
@@ -145,6 +153,7 @@ Background consumer that processes orders and updates inventory.
 Background consumer that computes real-time metrics.
 
 **Functionality:**
+
 - Reads from: order-events, inventory-events
 - Consumer group: analytics-group
 - Metrics computed:
@@ -156,6 +165,7 @@ Background consumer that computes real-time metrics.
 - Output: `metrics_output.json` (updated every 10s)
 
 **Metrics Schema:**
+
 ```json
 {
   "timestamp": "ISO-8601",
@@ -207,15 +217,18 @@ Background consumer that computes real-time metrics.
 ## Environment Variables
 
 **Producer:**
+
 - `PORT` - Service port (default: 8201)
 - `KAFKA_BROKER` - Kafka broker address
 
 **Consumers:**
+
 - `KAFKA_BROKER` - Kafka broker address
 
 ## Building and Running
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - 8GB RAM minimum (Kafka + Zookeeper)
 - Ports 2181, 9092, 9093, 8201 available
@@ -228,6 +241,7 @@ docker-compose up --build
 ```
 
 Services start order:
+
 1. Zookeeper
 2. Kafka (waits for Zookeeper)
 3. Topic creation
@@ -253,6 +267,7 @@ docker exec streaming_kafka kafka-consumer-groups \
 ### Create Orders
 
 Single order:
+
 ```bash
 curl -X POST http://localhost:8201/order \
   -H "Content-Type: application/json" \
@@ -260,6 +275,7 @@ curl -X POST http://localhost:8201/order \
 ```
 
 Batch orders:
+
 ```bash
 curl -X POST http://localhost:8201/orders/batch \
   -H "Content-Type: application/json" \
@@ -326,6 +342,7 @@ cd tests
 ```
 
 Or manually:
+
 ```bash
 docker exec streaming_kafka kafka-consumer-groups \
   --bootstrap-server localhost:9092 \
@@ -353,6 +370,7 @@ docker-compose down
 ```
 
 Clean up all data:
+
 ```bash
 docker-compose down -v
 ```
@@ -401,21 +419,25 @@ docker-compose down -v
 ## Troubleshooting
 
 ### Kafka won't start
+
 - Ensure 8GB RAM available
 - Wait 60s for initialization
 - Check logs: `docker logs streaming_kafka`
 
 ### Consumer lag growing
+
 - Check consumer logs for errors
 - Scale consumers: `docker-compose up --scale inventory_consumer=2`
 - Verify sufficient partitions
 
 ### Events not processing
+
 - Check consumer is running: `docker ps`
 - Verify topic exists: `kafka-topics --list`
 - Check consumer group: `kafka-consumer-groups --describe`
 
 ### Offset reset fails
+
 - Stop consumer first: `docker stop streaming_analytics_consumer`
 - Run reset command
 - Start consumer: `docker start streaming_analytics_consumer`
@@ -425,6 +447,7 @@ docker-compose down -v
 See main README.md for detailed comparison table.
 
 **Quick Summary:**
+
 - **vs Sync REST**: 135x lower client latency, better scalability
 - **vs Async RabbitMQ**: Higher throughput, replay capability, more complex
 
@@ -433,3 +456,24 @@ See main README.md for detailed comparison table.
 - Kafka documentation: https://kafka.apache.org/documentation/
 - Compare with sync-rest/RESULTS.md and async-rabbitmq/RESULTS.md
 - Confluent Kafka Python: https://docs.confluent.io/kafka-clients/python/
+
+## Lag demo (throttling)
+
+To demonstrate **consumer lag under throttling**, the consumers support an optional per-message delay:
+
+- `ANALYTICS_PROCESSING_DELAY_MS` (default `0`)
+- `INVENTORY_PROCESSING_DELAY_MS` (default `0`)
+
+Example: start the stack with a throttled analytics consumer:
+
+```bash
+cd streaming-kafka
+ANALYTICS_PROCESSING_DELAY_MS=200 docker compose up -d --build
+```
+
+Then run the lag test (it will throttle first, then unthrottle and show backlog drain):
+
+```bash
+cd streaming-kafka/tests
+python3 test_lag.py
+```

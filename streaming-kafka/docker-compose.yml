@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   zookeeper:
@@ -87,6 +87,7 @@ services:
     container_name: streaming_inventory_consumer
     environment:
       - KAFKA_BROKER=kafka:9092
+      - PROCESSING_DELAY_MS=${INVENTORY_PROCESSING_DELAY_MS:-0}
     networks:
       - streaming-network
     depends_on:
@@ -103,6 +104,7 @@ services:
     container_name: streaming_analytics_consumer
     environment:
       - KAFKA_BROKER=kafka:9092
+      - PROCESSING_DELAY_MS=${ANALYTICS_PROCESSING_DELAY_MS:-0}
     networks:
       - streaming-network
     depends_on:
@@ -112,7 +114,7 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     volumes:
-      - ./analytics_output:/app
+      - ./analytics_output:/app/output
 
 networks:
   streaming-network:

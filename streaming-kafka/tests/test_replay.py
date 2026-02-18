@@ -14,6 +14,8 @@ PRODUCER_URL = "http://localhost:8201"
 NUM_EVENTS = 1000
 BATCH_SIZE = 100
 ANALYTICS_OUTPUT_DIR = "../analytics_output"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ANALYTICS_OUTPUT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "analytics_output"))
 
 
 def stop_consumer(container_name):
@@ -84,7 +86,7 @@ def copy_metrics_file(source_name, dest_name):
     """Copy metrics file for comparison"""
     try:
         source = os.path.join(ANALYTICS_OUTPUT_DIR, source_name)
-        dest = dest_name
+        dest = os.path.join(SCRIPT_DIR, dest_name)
         if os.path.exists(source):
             shutil.copy(source, dest)
             print(f"✓ Copied {source_name} to {dest_name}")
@@ -149,7 +151,7 @@ def test_replay():
     
     # Read metrics
     try:
-        with open("metrics_before_replay.json", 'r') as f:
+        with open(os.path.join(SCRIPT_DIR, "metrics_before_replay.json"), 'r') as f:
             metrics_before = json.load(f)
             print(f"  Total orders processed: {metrics_before.get('total_orders', 0)}")
             print(f"  Reserved: {metrics_before.get('reserved_orders', 0)}")
@@ -180,7 +182,7 @@ def test_replay():
     
     # Read metrics
     try:
-        with open("metrics_after_replay.json", 'r') as f:
+        with open(os.path.join(SCRIPT_DIR, "metrics_after_replay.json"), 'r') as f:
             metrics_after = json.load(f)
             print(f"  Total orders processed: {metrics_after.get('total_orders', 0)}")
             print(f"  Reserved: {metrics_after.get('reserved_orders', 0)}")
@@ -198,7 +200,7 @@ def test_replay():
     print(f"{'Metric':<25} | {'Before Replay':<15} | {'After Replay':<15}")
     print("-" * 60)
     
-    for key in ['total_orders', 'reserved_orders', 'failed_orders', 'success_rate_percent']:
+    for key in ['total_orders', 'reserved_orders', 'failed_orders', 'orders_per_minute', 'failure_rate_percent', 'success_rate_percent']:
         before_val = metrics_before.get(key, 'N/A')
         after_val = metrics_after.get(key, 'N/A')
         print(f"{key:<25} | {str(before_val):<15} | {str(after_val):<15}")
@@ -208,7 +210,7 @@ def test_replay():
     print("\nKey Observations:")
     print("✓ Events can be replayed by resetting consumer offset")
     print("✓ Kafka retains events (7-day retention by default)")
-    print("✓ Reprocessing produces same results (deterministic)")
+    print("✓ Reprocessing produces same results (deterministic, event-time window metrics)")
     print("✓ Multiple consumer groups can replay independently")
     
     print("\nUse Cases for Replay:")
@@ -231,7 +233,7 @@ def test_replay():
         "identical": metrics_before.get('total_orders') == metrics_after.get('total_orders')
     }
     
-    with open('replay_comparison.json', 'w') as f:
+    with open(os.path.join(SCRIPT_DIR, 'replay_comparison.json'), 'w') as f:
         json.dump(comparison, f, indent=2)
     
     print(f"\n✓ Comparison exported to replay_comparison.json")
